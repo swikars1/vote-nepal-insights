@@ -18,8 +18,10 @@ import {
 import { Candidate, FilterState } from "@/types/election";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
 
 const Index = () => {
+  const { language, t } = useLanguage();
   const [filters, setFilters] = useState<FilterState>({
     province: null,
     district: null,
@@ -53,41 +55,42 @@ const Index = () => {
       {/* Hero Section */}
       <div className="mb-8 animate-fade-in">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground font-nepali">
-          नेपाल निर्वाचन उम्मेदवार
+          {language === "en" ? "Nepal Election Candidates" : "नेपाल निर्वाचन उम्मेदवार"}
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Nepal Election Candidates Dashboard
+          {language === "en" ? "Nepal Election Candidates Dashboard" : "नेपाल निर्वाचन उम्मेदवार ड्यासबोर्ड"}
         </p>
         <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-          जिल्ला, प्रदेश, र पार्टी अनुसार उम्मेदवारहरू खोज्नुहोस् • 
-          Explore candidates by district, province, and party
+          {language === "en" 
+            ? "Explore candidates by district, province, and party" 
+            : "जिल्ला, प्रदेश, र पार्टी अनुसार उम्मेदवारहरू खोज्नुहोस्"}
         </p>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-in-bottom">
         <StatCard
-          title="Total Candidates"
-          titleNp="कुल उम्मेदवार"
+          title={language === "en" ? t("stats.totalCandidates") : "कुल उम्मेदवार"}
+          titleNp={language === "np" ? t("stats.totalCandidates") : "कुल उम्मेदवार"}
           value={stats.totalCandidates}
           icon={Users}
           variant="primary"
         />
         <StatCard
-          title="Political Parties"
-          titleNp="राजनीतिक दलहरू"
+          title={language === "en" ? t("stats.politicalParties") : "राजनीतिक दलहरू"}
+          titleNp={language === "np" ? t("stats.politicalParties") : "राजनीतिक दलहरू"}
           value={Object.keys(stats.byParty).length}
           icon={Flag}
         />
         <StatCard
-          title="Districts"
-          titleNp="जिल्लाहरू"
+          title={language === "en" ? t("stats.districts") : "जिल्लाहरू"}
+          titleNp={language === "np" ? t("stats.districts") : "जिल्लाहरू"}
           value={Object.keys(stats.byDistrict).length}
           icon={MapPin}
         />
         <StatCard
-          title="Provinces"
-          titleNp="प्रदेशहरू"
+          title={language === "en" ? t("stats.provinces") : "प्रदेशहरू"}
+          titleNp={language === "np" ? t("stats.provinces") : "प्रदेशहरू"}
           value={Object.keys(stats.byProvince).length}
           icon={TrendingUp}
         />
@@ -123,15 +126,15 @@ const Index = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">
-              उम्मेदवारहरू
+              {language === "en" ? "Candidates" : "उम्मेदवारहरू"}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {filteredCandidates.length.toLocaleString()} उम्मेदवार फेला पर्यो
+              {filteredCandidates.length.toLocaleString()} {language === "en" ? t("candidates.found") : "उम्मेदवार फेला पर्यो"}
             </p>
           </div>
           <Link to="/candidates">
             <Button variant="outline" size="sm">
-              सबै हेर्नुहोस् →
+              {language === "en" ? "View All →" : "सबै हेर्नुहोस् →"}
             </Button>
           </Link>
         </div>
@@ -150,7 +153,9 @@ const Index = () => {
           <div className="mt-6 text-center">
             <Link to="/candidates">
               <Button size="lg">
-                सबै {filteredCandidates.length.toLocaleString()} उम्मेदवार हेर्नुहोस्
+                {language === "en" 
+                  ? `View all ${filteredCandidates.length.toLocaleString()} candidates`
+                  : `सबै ${filteredCandidates.length.toLocaleString()} उम्मेदवार हेर्नुहोस्`}
               </Button>
             </Link>
           </div>

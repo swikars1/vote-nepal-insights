@@ -1,5 +1,6 @@
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StatCardProps {
   title: string;
@@ -23,6 +24,9 @@ export function StatCard({
   variant = "default",
   className,
 }: StatCardProps) {
+  const { language } = useLanguage();
+  const displayTitle = language === "en" ? title : (titleNp || title);
+  
   return (
     <div
       className={cn(
@@ -34,10 +38,7 @@ export function StatCard({
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          {titleNp && (
-            <p className="text-sm font-medium text-foreground">{titleNp}</p>
-          )}
-          <p className="text-xs text-muted-foreground">{title}</p>
+          <p className="text-sm font-medium text-foreground">{displayTitle}</p>
         </div>
         <div
           className={cn(

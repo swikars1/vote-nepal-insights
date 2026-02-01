@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { ChartDataItem } from "@/types/election";
 import { getShortPartyName } from "@/hooks/useElectionData";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface PartyBarChartProps {
   data: Record<string, number>;
@@ -36,6 +37,7 @@ export function PartyBarChart({
   titleNp = "पार्टी अनुसार उम्मेदवार",
   maxItems = 7,
 }: PartyBarChartProps) {
+  const { language } = useLanguage();
   const chartData: ChartDataItem[] = useMemo(() => {
     return Object.entries(data)
       .map(([name, value]) => ({
@@ -47,11 +49,12 @@ export function PartyBarChart({
       .slice(0, maxItems);
   }, [data, maxItems]);
 
+  const displayTitle = language === "en" ? title : titleNp;
+
   return (
     <div className="chart-container h-full">
       <div className="mb-4">
-        <h3 className="font-semibold text-foreground">{titleNp}</h3>
-        <p className="text-xs text-muted-foreground">{title}</p>
+        <h3 className="font-semibold text-foreground">{displayTitle}</h3>
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -79,7 +82,9 @@ export function PartyBarChart({
                 fontSize: "12px",
               }}
               formatter={(value: number, name: string, props: any) => [
-                `${value.toLocaleString()} उम्मेदवार`,
+                language === "en"
+                  ? `${value.toLocaleString()} candidates`
+                  : `${value.toLocaleString()} उम्मेदवार`,
                 props.payload.name,
               ]}
               labelFormatter={() => ""}

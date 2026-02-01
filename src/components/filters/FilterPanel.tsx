@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useMemo } from "react";
 import { FilterState } from "@/types/election";
 import {
   Select,
@@ -12,6 +13,8 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Combobox } from "@/components/ui/combobox";
 import { DISTRICT_MAP_EN_NP, PARTY_MAP_EN_NP, PROVINCE_MAP_EN_NP } from "@/data/mappings";
+import { useLanguage } from "@/context/LanguageContext";
+import { translateQualification, translateGender, translateProvince, translateDistrict, translatePartyName } from "@/lib/translations";
 
 interface FilterPanelProps {
   filters: FilterState;
@@ -33,6 +36,7 @@ export function FilterPanel({
   options,
   className,
 }: FilterPanelProps) {
+  const { language } = useLanguage();
   const activeFiltersCount = Object.values(filters).filter(
     (v) => v !== null
   ).length;
@@ -64,30 +68,31 @@ export function FilterPanel({
       .map(([k]) => k);
   };
 
-  const provinceOptions = options.provinces.map(p => ({ 
-    label: p, 
+  const provinceOptions = useMemo(() => options.provinces.map(p => ({ 
+    label: language === "en" ? translateProvince(p, "en") : p, 
     value: p,
     keywords: getKeywords(p, PROVINCE_MAP_EN_NP)
-  }));
+  })), [options.provinces, language]);
   
-  const districtOptions = options.districts.map(d => ({ 
-    label: d, 
+  const districtOptions = useMemo(() => options.districts.map(d => ({ 
+    label: language === "en" ? translateDistrict(d, "en") : d, 
     value: d,
     keywords: getKeywords(d, DISTRICT_MAP_EN_NP)
-  }));
+  })), [options.districts, language]);
   
-  const partyOptions = options.parties.map(p => ({ 
-    label: p, 
+  const partyOptions = useMemo(() => options.parties.map(p => ({ 
+    label: language === "en" ? translatePartyName(p, "en") : p, 
     value: p,
     keywords: getKeywords(p, PARTY_MAP_EN_NP)
-  }));
+  })), [options.parties, language]);
 
   return (
     <div className={cn("space-y-4", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-foreground">फिल्टर</h3>
-          <span className="text-sm text-muted-foreground">(Filters)</span>
+          <h3 className="font-semibold text-foreground">
+            {language === "en" ? "Filters" : "फिल्टर"}
+          </h3>
           {activeFiltersCount > 0 && (
             <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
               {activeFiltersCount}
@@ -102,7 +107,7 @@ export function FilterPanel({
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="mr-1 h-4 w-4" />
-            Clear all
+            {language === "en" ? "Clear All" : "सबै हटाउनुहोस्"}
           </Button>
         )}
       </div>
@@ -113,9 +118,9 @@ export function FilterPanel({
           options={provinceOptions}
           value={filters.province}
           onSelect={(v) => updateFilter("province", v)}
-          placeholder="प्रदेश (Province)"
-          searchPlaceholder="Search province..."
-          emptyText="No province found."
+          placeholder={language === "en" ? "Select Province" : "प्रदेश चयन गर्नुहोस्"}
+          searchPlaceholder={language === "en" ? "Search province..." : "प्रदेश खोज्नुहोस्..."}
+          emptyText={language === "en" ? "No province found." : "कुनै प्रदेश फेला परेन।"}
         />
 
         {/* District Filter */}
@@ -123,9 +128,9 @@ export function FilterPanel({
           options={districtOptions}
           value={filters.district}
           onSelect={(v) => updateFilter("district", v)}
-          placeholder="जिल्ला (District)"
-          searchPlaceholder="Search district..."
-          emptyText="No district found."
+          placeholder={language === "en" ? "Select District" : "जिल्ला चयन गर्नुहोस्"}
+          searchPlaceholder={language === "en" ? "Search district..." : "जिल्ला खोज्नुहोस्..."}
+          emptyText={language === "en" ? "No district found." : "कुनै जिल्ला फेला परेन।"}
         />
 
         {/* Constituency Filter */}
@@ -134,13 +139,15 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("constituency", v === "all" ? "all" : parseInt(v))}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="क्षेत्र (Area)" />
+            <SelectValue placeholder={language === "en" ? "Select Area" : "क्षेत्र चयन गर्नुहोस्"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै क्षेत्र</SelectItem>
+            <SelectItem value="all">
+              {language === "en" ? "All Areas" : "सबै क्षेत्र"}
+            </SelectItem>
             {options.constituencies.map((constituency) => (
               <SelectItem key={constituency} value={constituency.toString()}>
-                Area {constituency}
+                {language === "en" ? "Area" : "क्षेत्र"} {constituency}
               </SelectItem>
             ))}
           </SelectContent>
@@ -151,9 +158,9 @@ export function FilterPanel({
           options={partyOptions}
           value={filters.party}
           onSelect={(v) => updateFilter("party", v)}
-          placeholder="पार्टी (Party)"
-          searchPlaceholder="Search party..."
-          emptyText="No party found."
+          placeholder={language === "en" ? "Select Party" : "पार्टी चयन गर्नुहोस्"}
+          searchPlaceholder={language === "en" ? "Search party..." : "पार्टी खोज्नुहोस्..."}
+          emptyText={language === "en" ? "No party found." : "कुनै पार्टी फेला परेन।"}
         />
 
         {/* Qualification Filter */}
@@ -162,13 +169,15 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("qualification", v)}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="योग्यता (Qualification)" />
+            <SelectValue placeholder={language === "en" ? "Select Qualification" : "योग्यता चयन गर्नुहोस्"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै योग्यता</SelectItem>
+            <SelectItem value="all">
+              {language === "en" ? "All Qualifications" : "सबै योग्यता"}
+            </SelectItem>
             {options.qualifications.map((qual) => (
               <SelectItem key={qual} value={qual}>
-                {qual}
+                {language === "en" ? translateQualification(qual, "en") : qual}
               </SelectItem>
             ))}
           </SelectContent>
@@ -180,13 +189,15 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("gender", v)}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="लिङ्ग (Gender)" />
+            <SelectValue placeholder={language === "en" ? "Select Gender" : "लिङ्ग चयन गर्नुहोस्"} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै लिङ्ग</SelectItem>
+            <SelectItem value="all">
+              {language === "en" ? "All Genders" : "सबै लिङ्ग"}
+            </SelectItem>
             {options.genders.map((gender) => (
               <SelectItem key={gender} value={gender}>
-                {gender}
+                {language === "en" ? translateGender(gender, "en") : gender}
               </SelectItem>
             ))}
           </SelectContent>
@@ -195,7 +206,7 @@ export function FilterPanel({
         {/* Age Range Filter */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>उमेर: {filters.ageMin || 25} - {filters.ageMax || 70}</span>
+            <span>{language === "en" ? "Age:" : "उमेर:"} {filters.ageMin || 25} - {filters.ageMax || 70}</span>
           </div>
           <Slider
             min={25}

@@ -1,7 +1,9 @@
 import { Candidate } from "@/types/election";
 import { getShortPartyName } from "@/hooks/useElectionData";
-import { User, MapPin, GraduationCap, Calendar } from "lucide-react";
+import { User, MapPin, GraduationCap, Calendar, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { translatePartyName, translateQualification, translateDistrict, translateAddress } from "@/lib/translations";
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -20,8 +22,25 @@ const partyColorMap: Record<string, string> = {
 };
 
 export function CandidateCard({ candidate, onClick, className }: CandidateCardProps) {
+  const { language } = useLanguage();
   const shortParty = getShortPartyName(candidate.PoliticalPartyName);
   const partyColor = partyColorMap[candidate.PoliticalPartyName] || "bg-secondary text-secondary-foreground";
+  
+  const displayParty = language === "en" 
+    ? translatePartyName(candidate.PoliticalPartyName, "en")
+    : shortParty;
+    
+  const displayQualification = language === "en"
+    ? translateQualification(candidate.QUALIFICATION, "en")
+    : candidate.QUALIFICATION;
+
+  const displayDistrict = language === "en"
+    ? translateDistrict(candidate.DistrictName, "en")
+    : candidate.DistrictName;
+
+  const displayAddress = language === "en"
+    ? translateAddress(candidate.ADDRESS || "", "en")
+    : candidate.ADDRESS || "";
 
   return (
     <div
@@ -51,7 +70,7 @@ export function CandidateCard({ candidate, onClick, className }: CandidateCardPr
                 partyColor
               )}
             >
-              {shortParty}
+              {displayParty}
             </span>
             <span className="text-xs text-muted-foreground">
               {candidate.SymbolName}
@@ -62,18 +81,26 @@ export function CandidateCard({ candidate, onClick, className }: CandidateCardPr
 
       {/* Details Grid */}
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <div className="flex items-center gap-1.5 text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
           <MapPin className="h-3.5 w-3.5" />
-          <span className="truncate">{candidate.DistrictName} - क्षेत्र {candidate.SCConstID}</span>
+          <span className="truncate">
+            {displayDistrict} - {language === "en" ? "Area" : "क्षेत्र"} {candidate.SCConstID}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />
-          <span>{candidate.AGE_YR} वर्ष</span>
+          <span>{candidate.AGE_YR} {language === "en" ? "years" : "वर्ष"}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           <GraduationCap className="h-3.5 w-3.5" />
-          <span>{candidate.QUALIFICATION}</span>
+          <span className="truncate">{displayQualification}</span>
         </div>
+        {displayAddress && (
+          <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
+            <Home className="h-3.5 w-3.5" />
+            <span className="truncate text-xs">{displayAddress}</span>
+          </div>
+        )}
       </div>
     </div>
   );

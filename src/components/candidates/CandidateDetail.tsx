@@ -14,9 +14,12 @@ import {
   Building,
   Briefcase,
   Flag,
-  Home
+  Home,
+  Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { translatePartyName, translateQualification, translateProvince, translateDistrict, translateAddress, translateGender } from "@/lib/translations";
 
 interface CandidateDetailProps {
   candidate: Candidate | null;
@@ -39,56 +42,95 @@ export function CandidateDetail({
   open,
   onOpenChange,
 }: CandidateDetailProps) {
+  const { language, t } = useLanguage();
+  
   if (!candidate) return null;
 
   const shortParty = getShortPartyName(candidate.PoliticalPartyName);
   const partyColor = partyColorMap[candidate.PoliticalPartyName] || "bg-secondary text-secondary-foreground";
+  
+  const displayParty = language === "en" 
+    ? translatePartyName(candidate.PoliticalPartyName, "en")
+    : shortParty;
+    
+  const displayQualification = language === "en"
+    ? translateQualification(candidate.QUALIFICATION, "en")
+    : candidate.QUALIFICATION;
+
+  const displayProvince = language === "en"
+    ? translateProvince(candidate.StateName, "en")
+    : candidate.StateName;
+
+  const displayDistrict = language === "en"
+    ? translateDistrict(candidate.DistrictName, "en")
+    : candidate.DistrictName;
+
+  const displayAddress = language === "en"
+    ? translateAddress(candidate.ADDRESS || "", "en")
+    : candidate.ADDRESS || "";
+
+  const fatherName = candidate.FATHER_NAME || candidate.FatherName || "N/A";
+  const spouseName = candidate.SPOUCE_NAME || candidate.SpouseName || "N/A";
+  
+  const displayGender = language === "en"
+    ? translateGender(candidate.Gender, "en")
+    : candidate.Gender;
 
   const details = [
     {
       icon: Calendar,
-      label: "उमेर (Age)",
-      value: `${candidate.AGE_YR} वर्ष`,
+      label: language === "en" ? t("candidate.age") : "उमेर",
+      value: `${candidate.AGE_YR} ${language === "en" ? "years" : "वर्ष"}`,
     },
     {
       icon: User,
-      label: "लिङ्ग (Gender)",
-      value: candidate.Gender,
+      label: language === "en" ? t("candidate.gender") : "लिङ्ग",
+      value: displayGender,
     },
     {
       icon: Flag,
-      label: "पार्टी (Party)",
-      value: candidate.PoliticalPartyName,
+      label: language === "en" ? t("candidate.party") : "पार्टी",
+      value: language === "en" ? displayParty : candidate.PoliticalPartyName,
     },
     {
       icon: MapPin,
-      label: "प्रदेश (Province)",
-      value: candidate.StateName,
+      label: language === "en" ? t("candidate.province") : "प्रदेश",
+      value: displayProvince,
     },
     {
       icon: MapPin,
-      label: "जिल्ला (District)",
-      value: candidate.DistrictName,
+      label: language === "en" ? t("candidate.district") : "जिल्ला",
+      value: displayDistrict,
     },
     {
       icon: GraduationCap,
-      label: "शैक्षिक योग्यता (Qualification)",
-      value: candidate.QUALIFICATION,
+      label: language === "en" ? t("candidate.qualification") : "शैक्षिक योग्यता",
+      value: displayQualification,
     },
     {
       icon: Building,
-      label: "शिक्षण संस्था (Institution)",
+      label: language === "en" ? t("candidate.institution") : "शिक्षण संस्था",
       value: candidate.NAMEOFINST || "N/A",
     },
     {
       icon: Briefcase,
-      label: "अनुभव (Experience)",
+      label: language === "en" ? t("candidate.experience") : "अनुभव",
       value: candidate.EXPERIENCE || "N/A",
     },
     {
       icon: Home,
-      label: "ठेगाना (Address)",
-      value: candidate.ADDRESS || "N/A",
+      label: language === "en" ? t("candidate.address") : "ठेगाना",
+      value: displayAddress,
+    },
+    {
+      icon: Users,
+      label: language === "en" ? t("candidate.father") : "बुबाको नाम",
+      value: fatherName,
+    },
+    {
+      icon: Users,
+      label: language === "en" ? t("candidate.spouse") : "पत्नीको नाम",
+      value: spouseName,
     },
   ];
 
@@ -112,10 +154,10 @@ export function CandidateDetail({
                     partyColor
                   )}
                 >
-                  {shortParty}
+                  {displayParty}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  चिन्ह: {candidate.SymbolName}
+                  {language === "en" ? "Symbol:" : "चिन्ह:"} {candidate.SymbolName}
                 </span>
               </div>
             </div>

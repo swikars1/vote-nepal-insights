@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ProvinceChartProps {
   data: Record<string, number>;
@@ -20,6 +21,7 @@ export function ProvinceChart({
   title = "Candidates by Province",
   titleNp = "प्रदेश अनुसार उम्मेदवार",
 }: ProvinceChartProps) {
+  const { language } = useLanguage();
   const chartData = useMemo(() => {
     return Object.entries(data)
       .map(([name, value]) => ({
@@ -30,11 +32,12 @@ export function ProvinceChart({
       .sort((a, b) => b.value - a.value);
   }, [data]);
 
+  const displayTitle = language === "en" ? title : titleNp;
+
   return (
     <div className="chart-container h-full">
       <div className="mb-4">
-        <h3 className="font-semibold text-foreground">{titleNp}</h3>
-        <p className="text-xs text-muted-foreground">{title}</p>
+        <h3 className="font-semibold text-foreground">{displayTitle}</h3>
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -61,7 +64,10 @@ export function ProvinceChart({
                 borderRadius: "8px",
                 fontSize: "12px",
               }}
-              formatter={(value: number) => [`${value.toLocaleString()} उम्मेदवार`, ""]}
+              formatter={(value: number) => [
+                language === "en" ? `${value.toLocaleString()} candidates` : `${value.toLocaleString()} उम्मेदवार`,
+                ""
+              ]}
               labelFormatter={(label: string, payload: any[]) => 
                 payload[0]?.payload?.name || label
               }

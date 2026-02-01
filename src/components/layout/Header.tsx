@@ -1,7 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Users, PieChart, Menu, X } from "lucide-react";
+import { BarChart3, Users, PieChart, Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { path: "/", label: "Dashboard", labelNp: "ड्यासबोर्ड", icon: BarChart3 },
@@ -12,6 +19,7 @@ const navItems = [
 export function Header() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { language, setLanguage } = useLanguage();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -46,23 +54,53 @@ export function Header() {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                <span>{item.labelNp}</span>
+                <span>{language === "en" ? item.label : item.labelNp}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 rounded-lg hover:bg-secondary"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
-        </button>
+        {/* Right side - Language Toggle and Mobile Menu */}
+        <div className="flex items-center gap-2">
+          {/* Language Toggle Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                title={language === "en" ? "Change Language" : "भाषा परिवर्तन गर्नुहोस्"}
+              >
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">{language.toUpperCase()}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => setLanguage("en")}
+                className={language === "en" ? "bg-primary text-primary-foreground" : ""}
+              >
+                English
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setLanguage("np")}
+                className={language === "np" ? "bg-primary text-primary-foreground" : ""}
+              >
+                नेपाली
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 rounded-lg hover:bg-secondary"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}
@@ -85,8 +123,10 @@ export function Header() {
                   )}
                 >
                   <Icon className="h-5 w-5" />
-                  <span>{item.labelNp}</span>
-                  <span className="text-xs opacity-70">({item.label})</span>
+                  <span>{language === "en" ? item.label : item.labelNp}</span>
+                  {language === "en" && (
+                    <span className="text-xs opacity-70">({item.labelNp})</span>
+                  )}
                 </Link>
               );
             })}

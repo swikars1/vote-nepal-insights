@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface GenderChartProps {
   data: Record<string, number>;
@@ -27,6 +28,7 @@ export function GenderChart({
   title = "Gender Distribution",
   titleNp = "लिङ्ग वितरण",
 }: GenderChartProps) {
+  const { language } = useLanguage();
   const chartData = useMemo(() => {
     return Object.entries(data).map(([name, value]) => ({
       name,
@@ -35,12 +37,12 @@ export function GenderChart({
   }, [data]);
 
   const total = chartData.reduce((acc, item) => acc + item.value, 0);
+  const displayTitle = language === "en" ? title : titleNp;
 
   return (
     <div className="chart-container h-full">
       <div className="mb-4">
-        <h3 className="font-semibold text-foreground">{titleNp}</h3>
-        <p className="text-xs text-muted-foreground">{title}</p>
+        <h3 className="font-semibold text-foreground">{displayTitle}</h3>
       </div>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -65,7 +67,7 @@ export function GenderChart({
               }}
               formatter={(value: number, name: string) => [
                 `${value.toLocaleString()} (${((value / total) * 100).toFixed(1)}%)`,
-                "उम्मेदवार",
+                language === "en" ? "Candidates" : "उम्मेदवार",
               ]}
             />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
