@@ -18,6 +18,8 @@ import {
 import { Candidate, FilterState } from "@/types/election";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
+import { ExportDataDialog } from "@/components/export/ExportDataDialog";
 
 const Index = () => {
   const [filters, setFilters] = useState<FilterState>({
@@ -29,14 +31,17 @@ const Index = () => {
     gender: null,
     ageMin: null,
     ageMax: null,
+    excludeIndependent: false,
   });
 
+  const { t, language } = useLanguage();
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const filterOptions = useFilterOptions(allCandidates, filters);
   const filteredCandidates = useFilteredCandidates(allCandidates, filters);
-  const stats = useAggregatedStats(filteredCandidates);
+  const stats = useAggregatedStats(filteredCandidates, filters);
 
   // Get top candidates to show preview
   const previewCandidates = useMemo(() => {
@@ -53,41 +58,40 @@ const Index = () => {
       {/* Hero Section */}
       <div className="mb-8 animate-fade-in">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground font-nepali">
-          नेपाल निर्वाचन उम्मेदवार
+          {t("नेपाल निर्वाचन उम्मेदवार", "Nepal Election Candidates")}
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Nepal Election Candidates Dashboard
+          {t("नेपाल निर्वाचन उम्मेदवार ड्यासबोर्ड", "Nepal Election Candidates Dashboard")}
         </p>
         <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-          जिल्ला, प्रदेश, र पार्टी अनुसार उम्मेदवारहरू खोज्नुहोस् • 
-          Explore candidates by district, province, and party
+          {t("जिल्ला, प्रदेश, र पार्टी अनुसार उम्मेदवारहरू खोज्नुहोस्", "Explore candidates by district, province, and party")}
         </p>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-in-bottom">
         <StatCard
-          title="Total Candidates"
-          titleNp="कुल उम्मेदवार"
+          title={t("Total Candidates", "Total Candidates")}
+          titleNp={t("कुल उम्मेदवार", "Total Candidates")}
           value={stats.totalCandidates}
           icon={Users}
           variant="primary"
         />
         <StatCard
-          title="Political Parties"
-          titleNp="राजनीतिक दलहरू"
+          title={t("Political Parties", "Political Parties")}
+          titleNp={t("राजनीतिक दलहरू", "Political Parties")}
           value={Object.keys(stats.byParty).length}
           icon={Flag}
         />
         <StatCard
-          title="Districts"
-          titleNp="जिल्लाहरू"
+          title={t("Districts", "Districts")}
+          titleNp={t("जिल्लाहरू", "Districts")}
           value={Object.keys(stats.byDistrict).length}
           icon={MapPin}
         />
         <StatCard
-          title="Provinces"
-          titleNp="प्रदेशहरू"
+          title={t("Provinces", "Provinces")}
+          titleNp={t("प्रदेशहरू", "Provinces")}
           value={Object.keys(stats.byProvince).length}
           icon={TrendingUp}
         />
@@ -99,6 +103,8 @@ const Index = () => {
           filters={filters}
           onFilterChange={setFilters}
           options={filterOptions}
+          onExportJson={() => setExportOpen(true)}
+          onExportPdf={() => window.print()}
         />
       </div>
 
@@ -119,19 +125,19 @@ const Index = () => {
       </div>
 
       {/* Candidate Preview */}
-      <div className="animate-slide-in-bottom" style={{ animationDelay: "0.3s" }}>
+      <div className="animate-slide-in-bottom no-print" style={{ animationDelay: "0.3s" }}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">
-              उम्मेदवारहरू
+              {t("उम्मेदवारहरू", "Candidates")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {filteredCandidates.length.toLocaleString()} उम्मेदवार फेला पर्यो
+              {filteredCandidates.length.toLocaleString()} {t("उम्मेदवार फेला पर्यो", "candidates found")}
             </p>
           </div>
           <Link to="/candidates">
             <Button variant="outline" size="sm">
-              सबै हेर्नुहोस् →
+              {t("सबै हेर्नुहोस् →", "View All →")}
             </Button>
           </Link>
         </div>
@@ -150,7 +156,7 @@ const Index = () => {
           <div className="mt-6 text-center">
             <Link to="/candidates">
               <Button size="lg">
-                सबै {filteredCandidates.length.toLocaleString()} उम्मेदवार हेर्नुहोस्
+                {t(`सबै ${filteredCandidates.length.toLocaleString()} उम्मेदवार हेर्नुहोस्`, `View all ${filteredCandidates.length.toLocaleString()} candidates`)}
               </Button>
             </Link>
           </div>
@@ -162,6 +168,14 @@ const Index = () => {
         candidate={selectedCandidate}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+
+      {/* Export Dialog */}
+      <ExportDataDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        data={filteredCandidates}
+        fullData={allCandidates}
       />
     </Layout>
   );
