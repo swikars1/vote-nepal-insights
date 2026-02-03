@@ -102,3 +102,45 @@ export const PROVINCE_MAP_EN_NP: Record<string, string> = {
   "karnali": "कर्णाली प्रदेश",
   "sudurpashchim": "सुदुरपश्चिम प्रदेश",
 };
+
+// Reverse mappings (Nepali to English)
+export const DISTRICT_MAP_NP_EN: Record<string, string> = Object.fromEntries(
+  Object.entries(DISTRICT_MAP_EN_NP).map(([en, np]) => [np, en.charAt(0).toUpperCase() + en.slice(1)])
+);
+
+export const PARTY_MAP_NP_EN: Record<string, string> = {
+  "राष्ट्रिय स्वतन्त्र पार्टी": "RSP",
+  "नेपाली काँग्रेस": "NC",
+  "नेपाल कम्युनिष्ट पार्टी (एकीकृत मार्क्सवादी लेनिनवादी)": "CPN UML",
+  "नेपाल कम्युनिष्ट पार्टी (माओवादी केन्द्र)": "CPN Maoist",
+  "राष्ट्रिय प्रजातन्त्र पार्टी": "RPP",
+  "जनता समाजवादी पार्टी, नेपाल": "JSP",
+  "स्वतन्त्र": "Independent",
+};
+
+export const PROVINCE_MAP_NP_EN: Record<string, string> = {
+  "कोशी प्रदेश": "Koshi Province",
+  "मधेश प्रदेश": "Madhesh Province",
+  "बागमती प्रदेश": "Bagmati Province",
+  "गण्डकी प्रदेश": "Gandaki Province",
+  "लुम्बिनी प्रदेश": "Lumbini Province",
+  "कर्णाली प्रदेश": "Karnali Province",
+  "सुदुरपश्चिम प्रदेश": "Sudurpashchim Province",
+};
+
+export const GENDER_MAP_NP_EN: Record<string, string> = {
+  "पुरुष": "Male",
+  "महिला": "Female",
+  "अन्य": "Other",
+};
+
+export const translateToEn = (text: string): string => {
+  if (!text) return text;
+  return (
+    DISTRICT_MAP_NP_EN[text] ||
+    PARTY_MAP_NP_EN[text] ||
+    PROVINCE_MAP_NP_EN[text] ||
+    GENDER_MAP_NP_EN[text] ||
+    text
+  );
+};

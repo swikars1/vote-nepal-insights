@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, Download, FileJson, FileText } from "lucide-react";
 import { FilterState } from "@/types/election";
 import {
   Select,
@@ -12,6 +12,9 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Combobox } from "@/components/ui/combobox";
 import { DISTRICT_MAP_EN_NP, PARTY_MAP_EN_NP, PROVINCE_MAP_EN_NP } from "@/data/mappings";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface FilterPanelProps {
   filters: FilterState;
@@ -20,10 +23,12 @@ interface FilterPanelProps {
     provinces: string[];
     districts: string[];
     constituencies: number[];
-    parties: string[];
+    parties: { name: string; code: string | number; count: number }[];
     qualifications: string[];
     genders: string[];
   };
+  onExportJson?: () => void;
+  onExportPdf?: () => void;
   className?: string;
 }
 
@@ -31,10 +36,13 @@ export function FilterPanel({
   filters,
   onFilterChange,
   options,
+  onExportJson,
+  onExportPdf,
   className,
 }: FilterPanelProps) {
+  const { t } = useLanguage();
   const activeFiltersCount = Object.values(filters).filter(
-    (v) => v !== null
+    (v) => v !== null && v !== false
   ).length;
 
   const clearFilters = () => {
@@ -47,10 +55,11 @@ export function FilterPanel({
       gender: null,
       ageMin: null,
       ageMax: null,
+      excludeIndependent: false,
     });
   };
 
-  const updateFilter = (key: keyof FilterState, value: string | number | null) => {
+  const updateFilter = (key: keyof FilterState, value: string | number | boolean | null) => {
     onFilterChange({
       ...filters,
       [key]: value === "all" ? null : value,
@@ -77,43 +86,70 @@ export function FilterPanel({
   }));
   
   const partyOptions = options.parties.map(p => ({ 
-    label: p, 
-    value: p,
-    keywords: getKeywords(p, PARTY_MAP_EN_NP)
+    label: `${p.name} (${p.code})`, 
+    value: p.code.toString(),
+    keywords: getKeywords(p.name, PARTY_MAP_EN_NP)
   }));
 
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-foreground">फिल्टर</h3>
-          <span className="text-sm text-muted-foreground">(Filters)</span>
+          <h3 className="font-semibold text-foreground">{t("फिल्टर", "Filters")}</h3>
           {activeFiltersCount > 0 && (
-            <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
+            <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
               {activeFiltersCount}
             </span>
           )}
         </div>
-        {activeFiltersCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="mr-1 h-4 w-4" />
-            Clear all
-          </Button>
-        )}
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-2 mr-4 bg-secondary/50 px-3 py-1.5 rounded-lg border border-border">
+            <Switch 
+              id="exclude-independent" 
+              checked={filters.excludeIndependent}
+              onCheckedChange={(checked) => updateFilter("excludeIndependent", checked)}
+            />
+            <Label htmlFor="exclude-independent" className="text-xs font-medium cursor-pointer">
+              {t("स्वतन्त्र हटाउनुहोस्", "Exclude Independent")}
+            </Label>
+          </div>
+
+          <div className="flex gap-2">
+            {onExportJson && (
+              <Button variant="outline" size="sm" onClick={onExportJson} className="h-9">
+                <FileJson className="mr-2 h-4 w-4" />
+                {t("डाटा डाउनलोड", "Get Data")}
+              </Button>
+            )}
+            {onExportPdf && (
+              <Button variant="outline" size="sm" onClick={onExportPdf} className="h-9">
+                <FileText className="mr-2 h-4 w-4" />
+                {t("रिपोर्ट डाउनलोड", "Get Stats")}
+              </Button>
+            )}
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-muted-foreground hover:text-foreground h-9"
+              >
+                <X className="mr-1 h-4 w-4" />
+                {t("सबै हटाउनुहोस्", "Clear all")}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 pt-2">
         {/* Province Filter */}
         <Combobox
           options={provinceOptions}
           value={filters.province}
           onSelect={(v) => updateFilter("province", v)}
-          placeholder="प्रदेश (Province)"
+          placeholder={t("प्रदेश", "Province")}
           searchPlaceholder="Search province..."
           emptyText="No province found."
         />
@@ -123,7 +159,7 @@ export function FilterPanel({
           options={districtOptions}
           value={filters.district}
           onSelect={(v) => updateFilter("district", v)}
-          placeholder="जिल्ला (District)"
+          placeholder={t("जिल्ला", "District")}
           searchPlaceholder="Search district..."
           emptyText="No district found."
         />
@@ -134,13 +170,13 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("constituency", v === "all" ? "all" : parseInt(v))}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="क्षेत्र (Area)" />
+            <SelectValue placeholder={t("क्षेत्र", "Constituency")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै क्षेत्र</SelectItem>
+            <SelectItem value="all">{t("सबै क्षेत्र", "All Areas")}</SelectItem>
             {options.constituencies.map((constituency) => (
               <SelectItem key={constituency} value={constituency.toString()}>
-                Area {constituency}
+                {t(`क्षेत्र ${constituency}`, `Area ${constituency}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -151,7 +187,7 @@ export function FilterPanel({
           options={partyOptions}
           value={filters.party}
           onSelect={(v) => updateFilter("party", v)}
-          placeholder="पार्टी (Party)"
+          placeholder={t("पार्टी", "Party")}
           searchPlaceholder="Search party..."
           emptyText="No party found."
         />
@@ -162,10 +198,10 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("qualification", v)}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="योग्यता (Qualification)" />
+            <SelectValue placeholder={t("योग्यता", "Qualification")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै योग्यता</SelectItem>
+            <SelectItem value="all">{t("सबै योग्यता", "All Education")}</SelectItem>
             {options.qualifications.map((qual) => (
               <SelectItem key={qual} value={qual}>
                 {qual}
@@ -180,10 +216,10 @@ export function FilterPanel({
           onValueChange={(v) => updateFilter("gender", v)}
         >
           <SelectTrigger className="bg-card">
-            <SelectValue placeholder="लिङ्ग (Gender)" />
+            <SelectValue placeholder={t("लिङ्ग", "Gender")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">सबै लिङ्ग</SelectItem>
+            <SelectItem value="all">{t("सबै लिङ्ग", "All Genders")}</SelectItem>
             {options.genders.map((gender) => (
               <SelectItem key={gender} value={gender}>
                 {gender}
@@ -191,27 +227,27 @@ export function FilterPanel({
             ))}
           </SelectContent>
         </Select>
+      </div>
 
-        {/* Age Range Filter */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>उमेर: {filters.ageMin || 25} - {filters.ageMax || 70}</span>
-          </div>
-          <Slider
-            min={25}
-            max={70}
-            step={5}
-            value={[filters.ageMin || 25, filters.ageMax || 70]}
-            onValueChange={([min, max]) => {
-              onFilterChange({
-                ...filters,
-                ageMin: min === 25 ? null : min,
-                ageMax: max === 70 ? null : max,
-              });
-            }}
-            className="py-2"
-          />
+      {/* Age Range Filter */}
+      <div className="pt-2 px-1">
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+          <span>{t("उमेर दायरा", "Age Range")}: {filters.ageMin || 25} - {filters.ageMax || 75}</span>
         </div>
+        <Slider
+          min={25}
+          max={75}
+          step={1}
+          value={[filters.ageMin || 25, filters.ageMax || 75]}
+          onValueChange={([min, max]) => {
+            onFilterChange({
+              ...filters,
+              ageMin: min === 25 ? null : min,
+              ageMax: max === 75 ? null : max,
+            });
+          }}
+          className="py-2"
+        />
       </div>
     </div>
   );

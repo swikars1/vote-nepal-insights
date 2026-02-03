@@ -32,12 +32,13 @@ export interface Candidate {
 export interface FilterState {
   province: string | null;
   district: string | null;
-  party: string | null;
+  party: string | number | null;
   qualification: string | null;
   gender: string | null;
   constituency: number | null;
   ageMin: number | null;
   ageMax: number | null;
+  excludeIndependent: boolean;
 }
 
 export interface AggregatedStats {

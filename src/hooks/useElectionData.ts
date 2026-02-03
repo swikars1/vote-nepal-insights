@@ -20,10 +20,15 @@ export function getEducationGroup(qualification: string): string {
 }
 
 // Compute aggregated statistics from candidates
-export function useAggregatedStats(candidates: Candidate[]): AggregatedStats {
+export function useAggregatedStats(candidates: Candidate[], filters?: FilterState): AggregatedStats {
   return useMemo(() => {
+    // Filter candidates based on independent exclusion if requested
+    const effectiveCandidates = filters?.excludeIndependent 
+      ? candidates.filter(c => c.PoliticalPartyName !== "स्वतन्त्र")
+      : candidates;
+
     const stats: AggregatedStats = {
-      totalCandidates: candidates.length,
+      totalCandidates: effectiveCandidates.length,
       byParty: {},
       byProvince: {},
       byDistrict: {},
@@ -37,7 +42,7 @@ export function useAggregatedStats(candidates: Candidate[]): AggregatedStats {
       stats.byAgeGroup[group.label] = 0;
     });
 
-    candidates.forEach(candidate => {
+    effectiveCandidates.forEach(candidate => {
       // By Party
       stats.byParty[candidate.PoliticalPartyName] = 
         (stats.byParty[candidate.PoliticalPartyName] || 0) + 1;
@@ -69,7 +74,7 @@ export function useAggregatedStats(candidates: Candidate[]): AggregatedStats {
     });
 
     return stats;
-  }, [candidates]);
+  }, [candidates, filters?.excludeIndependent]);
 }
 
 // Filter candidates based on filter state
@@ -79,6 +84,9 @@ export function useFilteredCandidates(
 ): Candidate[] {
   return useMemo(() => {
     return candidates.filter(candidate => {
+      if (filters.excludeIndependent && candidate.PoliticalPartyName === "स्वतन्त्र") {
+        return false;
+      }
       if (filters.province && candidate.StateName !== filters.province) {
         return false;
       }
@@ -88,8 +96,16 @@ export function useFilteredCandidates(
       if (filters.constituency && candidate.SCConstID !== filters.constituency) {
         return false;
       }
-      if (filters.party && candidate.PoliticalPartyName !== filters.party) {
-        return false;
+      if (filters.party) {
+        // Use string comparison for SYMBOLCODE if available, otherwise match by name
+        const filterStr = filters.party.toString();
+        const candidateCode = candidate.SYMBOLCODE?.toString();
+        
+        if (candidateCode) {
+           if (candidateCode !== filterStr) return false;
+        } else if (candidate.PoliticalPartyName !== filters.party) {
+           return false;
+        }
       }
       // Filter by Grouped Qualification
       if (filters.qualification && getEducationGroup(candidate.QUALIFICATION) !== filters.qualification) {
@@ -112,18 +128,22 @@ export function useFilteredCandidates(
 // Get unique values for filter options with dependent logic
 export function useFilterOptions(candidates: Candidate[], filters?: FilterState) {
   return useMemo(() => {
+    // Pre-calculate global counts for parties to define "major" parties
+    const globalPartyCounts: Record<string | number, number> = {};
+    candidates.forEach(c => {
+      const key = (c.SYMBOLCODE !== undefined && c.SYMBOLCODE !== null) ? c.SYMBOLCODE : c.PoliticalPartyName;
+      globalPartyCounts[key] = (globalPartyCounts[key] || 0) + 1;
+    });
+
     // Helper to get unique values from a filtered list of candidates
     const getUniqueValues = (
-      field: keyof Candidate | 'EDUCATION_GROUP', // Virtual field
+      field: keyof Candidate | 'EDUCATION_GROUP' | 'PARTIES', // Virtual fields
       currentFilters: FilterState,
       excludeField: keyof FilterState
     ) => {
-      // Create a filter object excluding the current field to allow changing selection
-      // while respecting other filters
       const effectiveFilters = { ...currentFilters };
       
       if (excludeField) {
-        // Use type assertion to allow setting null on a key that might strict typed
         (effectiveFilters as Record<string, unknown>)[excludeField] = null;
       }
 
@@ -131,10 +151,18 @@ export function useFilterOptions(candidates: Candidate[], filters?: FilterState)
         if (effectiveFilters.province && candidate.StateName !== effectiveFilters.province) return false;
         if (effectiveFilters.district && candidate.DistrictName !== effectiveFilters.district) return false;
         if (effectiveFilters.constituency && candidate.SCConstID !== effectiveFilters.constituency) return false;
-        if (effectiveFilters.party && candidate.PoliticalPartyName !== effectiveFilters.party) return false;
-        // Filter check for qualification uses the group
-        if (effectiveFilters.qualification && getEducationGroup(candidate.QUALIFICATION) !== effectiveFilters.qualification) return false;
         
+        if (effectiveFilters.party) {
+           const filterStr = effectiveFilters.party.toString();
+           const candidateCode = candidate.SYMBOLCODE?.toString();
+           if (candidateCode) {
+              if (candidateCode !== filterStr) return false;
+           } else if (candidate.PoliticalPartyName !== effectiveFilters.party) {
+              return false;
+           }
+        }
+
+        if (effectiveFilters.qualification && getEducationGroup(candidate.QUALIFICATION) !== effectiveFilters.qualification) return false;
         if (effectiveFilters.gender && candidate.Gender !== effectiveFilters.gender) return false;
         if (effectiveFilters.ageMin && candidate.AGE_YR < effectiveFilters.ageMin) return false;
         if (effectiveFilters.ageMax && candidate.AGE_YR > effectiveFilters.ageMax) return false;
@@ -143,15 +171,22 @@ export function useFilterOptions(candidates: Candidate[], filters?: FilterState)
 
       if (field === 'EDUCATION_GROUP') {
         const groups = new Set(filtered.map(c => getEducationGroup(c.QUALIFICATION)));
-        // Return sorted by education level if possible, otherwise alphabetical
-        // We can define a hierarchy for sorting
         const hierarchy = ["Ph.D / M.Phil", "Masters", "Bachelors", "+2 / Diploma", "SLC / SEE", "Below SLC", "Literate", "Other"];
         return [...groups].sort((a, b) => hierarchy.indexOf(a) - hierarchy.indexOf(b));
       }
 
-      if (field === 'PoliticalPartyName') {
-         const uniqueParties = [...new Set(filtered.map(c => c.PoliticalPartyName))];
-         const PRIORITY_PARTIES = [
+      if (field === 'PARTIES') {
+        const partyMap: Record<number | string, { name: string; count: number; code: number | string }> = {};
+        
+        filtered.forEach(c => {
+          const code = (c.SYMBOLCODE !== undefined && c.SYMBOLCODE !== null) ? c.SYMBOLCODE : c.PoliticalPartyName;
+          if (!partyMap[code]) {
+            partyMap[code] = { name: c.PoliticalPartyName, count: 0, code };
+          }
+          partyMap[code].count++;
+        });
+
+        const PRIORITY_PARTIES = [
           "राष्ट्रिय स्वतन्त्र पार्टी",
           "नेपाली काँग्रेस",
           "नेपाल कम्युनिष्ट पार्टी (एकीकृत मार्क्सवादी लेनिनवादी)",
@@ -161,17 +196,20 @@ export function useFilterOptions(candidates: Candidate[], filters?: FilterState)
           "जनमत पार्टी",
           "स्वतन्त्र"
         ];
-        
-        return uniqueParties.sort((a, b) => {
-          const idxA = PRIORITY_PARTIES.indexOf(a);
-          const idxB = PRIORITY_PARTIES.indexOf(b);
-          
-          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1;
-          if (idxB !== -1) return 1;
-          
-          return a.localeCompare(b);
-        });
+
+        return Object.values(partyMap)
+          .filter(p => {
+             // Keep if global count > 10 OR it's a priority party
+             return globalPartyCounts[p.code] > 10 || PRIORITY_PARTIES.includes(p.name);
+          })
+          .sort((a, b) => {
+            const idxA = PRIORITY_PARTIES.indexOf(a.name);
+            const idxB = PRIORITY_PARTIES.indexOf(b.name);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.name.localeCompare(b.name);
+          });
       }
 
       return [...new Set(filtered.map(c => c[field] as string | number))].sort((a, b) => {
@@ -180,47 +218,25 @@ export function useFilterOptions(candidates: Candidate[], filters?: FilterState)
       });
     };
 
-    if (!filters) {
-        const provinces = [...new Set(candidates.map(c => c.StateName))].sort();
-        const districts = [...new Set(candidates.map(c => c.DistrictName))].sort();
-        const constituencies = [...new Set(candidates.map(c => c.SCConstID))].sort((a, b) => (a || 0) - (b || 0));
-        
-        const PRIORITY_PARTIES = [
-          "नेपाली काँग्रेस",
-          "नेपाल कम्युनिष्ट पार्टी (एकीकृत मार्क्सवादी लेनिनवादी)",
-          "नेपाल कम्युनिष्ट पार्टी (माओवादी केन्द्र)",
-          "राष्ट्रिय स्वतन्त्र पार्टी",
-          "राष्ट्रिय प्रजातन्त्र पार्टी",
-          "जनता समाजवादी पार्टी, नेपाल",
-          "जनमत पार्टी",
-          "स्वतन्त्र"
-        ];
-        
-        const parties = [...new Set(candidates.map(c => c.PoliticalPartyName))].sort((a, b) => {
-          const idxA = PRIORITY_PARTIES.indexOf(a);
-          const idxB = PRIORITY_PARTIES.indexOf(b);
-          
-          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-          if (idxA !== -1) return -1;
-          if (idxB !== -1) return 1;
-          
-          return a.localeCompare(b);
-        });
-        // Initial qualifications are just all available groups
-        const hierarchy = ["Ph.D / M.Phil", "Masters", "Bachelors", "+2 / Diploma", "SLC / SEE", "Below SLC", "Literate", "Other"];
-        const qualifications = [...new Set(candidates.map(c => getEducationGroup(c.QUALIFICATION)))].sort((a, b) => hierarchy.indexOf(a) - hierarchy.indexOf(b));
-        
-        const genders = [...new Set(candidates.map(c => c.Gender))];
-        return { provinces, districts, constituencies, parties, qualifications, genders };
-    }
+    const emptyFilter = {
+        province: null,
+        district: null,
+        party: null,
+        qualification: null,
+        constituency: null,
+        gender: null,
+        ageMin: null,
+        ageMax: null,
+        excludeIndependent: false,
+    };
 
     return {
-      provinces: getUniqueValues("StateName", filters, "province") as string[],
-      districts: getUniqueValues("DistrictName", filters, "district") as string[],
-      constituencies: getUniqueValues("SCConstID", filters, "constituency") as number[],
-      parties: getUniqueValues("PoliticalPartyName", filters, "party") as string[],
-      qualifications: getUniqueValues("EDUCATION_GROUP", filters, "qualification") as string[],
-      genders: getUniqueValues("Gender", filters, "gender") as string[],
+      provinces: getUniqueValues("StateName", filters || emptyFilter, "province") as string[],
+      districts: getUniqueValues("DistrictName", filters || emptyFilter, "district") as string[],
+      constituencies: getUniqueValues("SCConstID", filters || emptyFilter, "constituency") as number[],
+      parties: getUniqueValues("PARTIES", filters || emptyFilter, "party") as any[],
+      qualifications: getUniqueValues("EDUCATION_GROUP", filters || emptyFilter, "qualification") as string[],
+      genders: getUniqueValues("Gender", filters || emptyFilter, "gender") as string[],
     };
   }, [candidates, filters]);
 }

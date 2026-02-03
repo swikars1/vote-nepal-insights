@@ -17,6 +17,8 @@ import {
   Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { translateToEn } from "@/data/mappings";
 
 interface CandidateDetailProps {
   candidate: Candidate | null;
@@ -39,56 +41,63 @@ export function CandidateDetail({
   open,
   onOpenChange,
 }: CandidateDetailProps) {
+  const { t, language } = useLanguage();
   if (!candidate) return null;
 
   const shortParty = getShortPartyName(candidate.PoliticalPartyName);
   const partyColor = partyColorMap[candidate.PoliticalPartyName] || "bg-secondary text-secondary-foreground";
 
+  // Helper to translate value if needed
+  const val = (text: any) => {
+    if (typeof text !== "string") return text;
+    return language === "en" ? translateToEn(text) : text;
+  };
+
   const details = [
     {
       icon: Calendar,
-      label: "उमेर (Age)",
-      value: `${candidate.AGE_YR} वर्ष`,
+      label: t("उमेर", "Age"),
+      value: `${candidate.AGE_YR} ${t("वर्ष", "Years")}`,
     },
     {
       icon: User,
-      label: "लिङ्ग (Gender)",
-      value: candidate.Gender,
+      label: t("लिङ्ग", "Gender"),
+      value: val(candidate.Gender),
     },
     {
       icon: Flag,
-      label: "पार्टी (Party)",
-      value: candidate.PoliticalPartyName,
+      label: t("पार्टी", "Party"),
+      value: val(candidate.PoliticalPartyName),
     },
     {
       icon: MapPin,
-      label: "प्रदेश (Province)",
-      value: candidate.StateName,
+      label: t("प्रदेश", "Province"),
+      value: val(candidate.StateName),
     },
     {
       icon: MapPin,
-      label: "जिल्ला (District)",
-      value: candidate.DistrictName,
+      label: t("जिल्ला", "District"),
+      value: val(candidate.DistrictName),
     },
     {
       icon: GraduationCap,
-      label: "शैक्षिक योग्यता (Qualification)",
-      value: candidate.QUALIFICATION,
+      label: t("शैक्षिक योग्यता", "Qualification"),
+      value: val(candidate.QUALIFICATION),
     },
     {
       icon: Building,
-      label: "शिक्षण संस्था (Institution)",
-      value: candidate.NAMEOFINST || "N/A",
+      label: t("शिक्षण संस्था", "Institution"),
+      value: candidate.NAMEOFINST && candidate.NAMEOFINST !== "0" ? candidate.NAMEOFINST : t("उपलब्ध छैन", "N/A"),
     },
     {
       icon: Briefcase,
-      label: "अनुभव (Experience)",
-      value: candidate.EXPERIENCE || "N/A",
+      label: t("अनुभव", "Experience"),
+      value: candidate.EXPERIENCE && candidate.EXPERIENCE !== "0" ? candidate.EXPERIENCE : t("उपलब्ध छैन", "N/A"),
     },
     {
       icon: Home,
-      label: "ठेगाना (Address)",
-      value: candidate.ADDRESS || "N/A",
+      label: t("ठेगाना", "Address"),
+      value: candidate.ADDRESS || t("उपलब्ध छैन", "N/A"),
     },
   ];
 
@@ -98,11 +107,18 @@ export function CandidateDetail({
         <DialogHeader className="text-left">
           <div className="flex items-start gap-4">
             {/* Large Avatar */}
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-secondary shrink-0">
-              <img src={`https://result.election.gov.np/Images/Candidate/${candidate.CandidateID}.jpg`} className="w-100 h-100 object-cover" alt="candidate picture of face"/>
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-secondary shrink-0 overflow-hidden border-2 border-primary/10">
+              <img 
+                src={`https://result.election.gov.np/Images/Candidate/${candidate.CandidateID}.jpg`} 
+                className="w-full h-full object-cover" 
+                alt={candidate.CandidateName}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.CandidateName)}&background=random`;
+                }}
+              />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-xl font-bold font-nepali leading-tight">
+              <DialogTitle className="text-xl font-bold leading-tight">
                 {candidate.CandidateName}
               </DialogTitle>
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -112,10 +128,10 @@ export function CandidateDetail({
                     partyColor
                   )}
                 >
-                  {shortParty}
+                  {val(shortParty)}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  चिन्ह: {candidate.SymbolName}
+                  {t("चिन्ह", "Symbol")}: {val(candidate.SymbolName)}
                 </span>
               </div>
             </div>
